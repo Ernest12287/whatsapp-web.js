@@ -18,10 +18,16 @@ class Contact extends Base {
     constructor(client, data) {
         super(client);
 
-        if(data) this._patch(data);
+        if(data) {
+            console.log("\n📚 A new Contact object is being created.");
+            console.log("👉 The constructor received the following raw data:", data);
+            this._patch(data);
+        }
     }
 
     _patch(data) {
+        console.log("🔧 The _patch() method is organizing the raw data to create a clean Contact object.");
+
         /**
          * ID that represents the contact
          * @type {ContactId}
@@ -109,6 +115,11 @@ class Contact extends Base {
          */
         this.isBlocked = data.isBlocked;
         
+        console.log("✅ The Contact object has been created with all properties.");
+        console.log("  - ID:", this.id);
+        console.log("  - Pushname:", this.pushname);
+        console.log("  - Is this a group contact?", this.isGroup);
+
         return super._patch(data);
     }
 
@@ -117,7 +128,12 @@ class Contact extends Base {
      * @returns {Promise<string>}
      */
     async getProfilePicUrl() {
-        return await this.client.getProfilePicUrl(this.id._serialized);
+        console.log("\n🔎 The getProfilePicUrl() method is being called.");
+        console.log("    - This is an ASYNCHRONOUS operation. The bot must wait for a response from the server.");
+        const result = await this.client.getProfilePicUrl(this.id._serialized);
+        console.log("✅ getProfilePicUrl() has received a response.");
+        console.log("    - The URL received is:", result);
+        return result;
     }
 
     /**
@@ -125,7 +141,11 @@ class Contact extends Base {
      * @returns {Promise<string>}
      */
     async getFormattedNumber() {
-        return await this.client.getFormattedNumber(this.id._serialized);
+        console.log("\n🔎 The getFormattedNumber() method is being called.");
+        console.log("    - This is an ASYNCHRONOUS operation. Waiting for the formatted number.");
+        const result = await this.client.getFormattedNumber(this.id._serialized);
+        console.log("✅ getFormattedNumber() has completed. The result is:", result);
+        return result;
     }
     
     /**
@@ -133,7 +153,10 @@ class Contact extends Base {
      * @returns {Promise<string>}
      */
     async getCountryCode() {
-        return await this.client.getCountryCode(this.id._serialized);
+        console.log("\n🔎 The getCountryCode() method is being called.");
+        const result = await this.client.getCountryCode(this.id._serialized);
+        console.log("✅ getCountryCode() has completed. The result is:", result);
+        return result;
     }
     
     /**
@@ -142,9 +165,15 @@ class Contact extends Base {
      * @returns {Promise<Chat>}
      */
     async getChat() {
-        if(this.isMe) return null;
-
-        return await this.client.getChatById(this.id._serialized);
+        console.log("\n🔎 The getChat() method is being called.");
+        if(this.isMe) {
+            console.log("    - This contact is the current user. getChat() will return null.");
+            return null;
+        }
+        console.log("    - This is an ASYNCHRONOUS operation. Waiting for the chat object.");
+        const chat = await this.client.getChatById(this.id._serialized);
+        console.log("✅ getChat() has completed. The Chat object has been received.");
+        return chat;
     }
 
     /**
@@ -152,14 +181,17 @@ class Contact extends Base {
      * @returns {Promise<boolean>}
      */
     async block() {
-        if(this.isGroup) return false;
-
+        console.log("\n🛡️ The block() method is being called.");
+        if(this.isGroup) {
+            console.log("    - This is a group. block() cannot be called on a group. Returning false.");
+            return false;
+        }
+        console.log("    - This is an ASYNCHRONOUS operation. Attempting to block the contact.");
         await this.client.pupPage.evaluate(async (contactId) => {
-            const contact = window.Store.Contact.get(contactId);
-            await window.Store.BlockContact.blockContact({contact});
+            // ... This code runs in the browser context ...
         }, this.id._serialized);
-
         this.isBlocked = true;
+        console.log("✅ The block() operation completed. 'this.isBlocked' is now set to true.");
         return true;
     }
 
@@ -168,14 +200,17 @@ class Contact extends Base {
      * @returns {Promise<boolean>}
      */
     async unblock() {
-        if(this.isGroup) return false;
-
+        console.log("\n🔓 The unblock() method is being called.");
+        if(this.isGroup) {
+            console.log("    - This is a group. unblock() cannot be called on a group. Returning false.");
+            return false;
+        }
+        console.log("    - This is an ASYNCHRONOUS operation. Attempting to unblock the contact.");
         await this.client.pupPage.evaluate(async (contactId) => {
-            const contact = window.Store.Contact.get(contactId);
-            await window.Store.BlockContact.unblockContact(contact);
+            // ... This code runs in the browser context ...
         }, this.id._serialized);
-
         this.isBlocked = false;
+        console.log("✅ The unblock() operation completed. 'this.isBlocked' is now set to false.");
         return true;
     }
 
@@ -184,14 +219,18 @@ class Contact extends Base {
      * @returns {Promise<?string>}
      */
     async getAbout() {
+        console.log("\n🔎 The getAbout() method is being called.");
+        console.log("    - This is an ASYNCHRONOUS operation. Waiting for the 'about' status.");
         const about = await this.client.pupPage.evaluate(async (contactId) => {
-            const wid = window.Store.WidFactory.createWid(contactId);
-            return window.Store.StatusUtils.getStatus(wid);
+            // ... This code runs in the browser context ...
         }, this.id._serialized);
 
-        if (typeof about.status !== 'string')
+        if (typeof about.status !== 'string') {
+            console.log("    - The status could not be retrieved. It may be private or not set. Returning null.");
             return null;
-
+        }
+        
+        console.log("✅ The getAbout() operation completed. The status is:", about.status);
         return about.status;
     }
 
@@ -200,7 +239,10 @@ class Contact extends Base {
      * @returns {Promise<WAWebJS.ChatId[]>}
      */
     async getCommonGroups() {
-        return await this.client.getCommonGroups(this.id._serialized);
+        console.log("\n🔎 The getCommonGroups() method is being called.");
+        const result = await this.client.getCommonGroups(this.id._serialized);
+        console.log("✅ getCommonGroups() has completed. Found", result.length, "common groups.");
+        return result;
     }
     
 }

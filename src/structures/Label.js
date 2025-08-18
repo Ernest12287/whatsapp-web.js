@@ -15,10 +15,15 @@ class Label extends Base {
     constructor(client, labelData){
         super(client);
 
-        if(labelData) this._patch(labelData);
+        if(labelData) {
+            console.log("\n📚 A new Label object is being created.");
+            console.log("👉 The constructor received the following raw data:", labelData);
+            this._patch(labelData);
+        }
     }
 
     _patch(labelData){
+        console.log("\n🔧 _patch() is organizing the raw label data into a clean object.");
         /**
          * Label ID
          * @type {string}
@@ -36,13 +41,22 @@ class Label extends Base {
          * @type {string}
          */
         this.hexColor = labelData.hexColor;
+
+        console.log("✅ The Label object has been created with the following properties:");
+        console.log("  - ID:", this.id);
+        console.log("  - Name:", this.name);
+        console.log("  - Hex Color:", this.hexColor);
     }
     /**
      * Get all chats that have been assigned this Label
      * @returns {Promise<Array<Chat>>}
      */
     async getChats(){
-        return this.client.getChatsByLabelId(this.id);
+        console.log("\n➡️ getChats() called. Attempting to retrieve all chats for this label.");
+        console.log("    - Calling client.getChatsByLabelId() with label ID:", this.id);
+        const chats = await this.client.getChatsByLabelId(this.id);
+        console.log(`✅ getChats() completed. Found ${chats.length} chats associated with this label.`);
+        return chats;
     }
 
 }

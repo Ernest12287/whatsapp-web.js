@@ -11,10 +11,16 @@ class Chat extends Base {
     constructor(client, data) {
         super(client);
 
-        if (data) this._patch(data);
+        if (data) {
+            console.log("\n📚 A new Chat object is being created.");
+            console.log("👉 The constructor received the following raw data:", data);
+            this._patch(data);
+        }
     }
 
     _patch(data) {
+        console.log("\n🔧 _patch() is organizing the raw chat data into a clean object.");
+        
         /**
          * ID that represents the chat
          * @type {object}
@@ -81,6 +87,14 @@ class Chat extends Base {
          */
         this.lastMessage = data.lastMessage ? new Message(this.client, data.lastMessage) : undefined;
         
+        console.log("✅ The Chat object has been created with the following properties:");
+        console.log("  - ID:", this.id);
+        console.log("  - Name:", this.name);
+        console.log("  - Is a Group?", this.isGroup);
+        if (this.lastMessage) {
+            console.log("  - Contains a lastMessage property:", this.lastMessage);
+        }
+
         return super._patch(data);
     }
 
@@ -91,7 +105,10 @@ class Chat extends Base {
      * @returns {Promise<Message>} Message that was just sent
      */
     async sendMessage(content, options) {
-        return this.client.sendMessage(this.id._serialized, content, options);
+        console.log("\n💬 sendMessage() called. Preparing to send content:", content);
+        const result = await this.client.sendMessage(this.id._serialized, content, options);
+        console.log("✅ sendMessage() completed. A Message object was returned.");
+        return result;
     }
 
     /**
@@ -99,7 +116,10 @@ class Chat extends Base {
      * @returns {Promise<Boolean>} result
      */
     async sendSeen() {
-        return this.client.sendSeen(this.id._serialized);
+        console.log("\n👁️  sendSeen() called. Setting chat as read.");
+        const result = await this.client.sendSeen(this.id._serialized);
+        console.log("✅ sendSeen() completed. Result:", result);
+        return result;
     }
 
     /**
@@ -107,9 +127,12 @@ class Chat extends Base {
      * @returns {Promise<boolean>} result
      */
     async clearMessages() {
-        return this.client.pupPage.evaluate(chatId => {
+        console.log("\n🗑️  clearMessages() called. Attempting to delete all messages from this chat.");
+        const result = await this.client.pupPage.evaluate(chatId => {
             return window.WWebJS.sendClearChat(chatId);
         }, this.id._serialized);
+        console.log("✅ clearMessages() completed. Result:", result);
+        return result;
     }
 
     /**
@@ -117,23 +140,32 @@ class Chat extends Base {
      * @returns {Promise<Boolean>} result
      */
     async delete() {
-        return this.client.pupPage.evaluate(chatId => {
+        console.log("\n❌ delete() called. Attempting to delete the entire chat.");
+        const result = await this.client.pupPage.evaluate(chatId => {
             return window.WWebJS.sendDeleteChat(chatId);
         }, this.id._serialized);
+        console.log("✅ delete() completed. Result:", result);
+        return result;
     }
 
     /**
      * Archives this chat
      */
     async archive() {
-        return this.client.archiveChat(this.id._serialized);
+        console.log("\n📦 archive() called. Archiving the chat.");
+        const result = await this.client.archiveChat(this.id._serialized);
+        console.log("✅ archive() completed. Result:", result);
+        return result;
     }
 
     /**
      * un-archives this chat
      */
     async unarchive() {
-        return this.client.unarchiveChat(this.id._serialized);
+        console.log("\n📦 unarchive() called. Unarchiving the chat.");
+        const result = await this.client.unarchiveChat(this.id._serialized);
+        console.log("✅ unarchive() completed. Result:", result);
+        return result;
     }
 
     /**
@@ -141,7 +173,10 @@ class Chat extends Base {
      * @returns {Promise<boolean>} New pin state. Could be false if the max number of pinned chats was reached.
      */
     async pin() {
-        return this.client.pinChat(this.id._serialized);
+        console.log("\n📌 pin() called. Attempting to pin the chat.");
+        const result = await this.client.pinChat(this.id._serialized);
+        console.log("✅ pin() completed. New pin state:", result);
+        return result;
     }
 
     /**
@@ -149,7 +184,10 @@ class Chat extends Base {
      * @returns {Promise<boolean>} New pin state
      */
     async unpin() {
-        return this.client.unpinChat(this.id._serialized);
+        console.log("\n📌 unpin() called. Attempting to unpin the chat.");
+        const result = await this.client.unpinChat(this.id._serialized);
+        console.log("✅ unpin() completed. New pin state:", result);
+        return result;
     }
 
     /**
@@ -158,9 +196,11 @@ class Chat extends Base {
      * @returns {Promise<{isMuted: boolean, muteExpiration: number}>}
      */
     async mute(unmuteDate) {
+        console.log("\n🔇 mute() called. Muting the chat.");
         const result = await this.client.muteChat(this.id._serialized, unmuteDate);
         this.isMuted = result.isMuted;
         this.muteExpiration = result.muteExpiration;
+        console.log("✅ mute() completed. isMuted:", this.isMuted, ", muteExpiration:", this.muteExpiration);
         return result;
     }
 
@@ -169,9 +209,11 @@ class Chat extends Base {
      * @returns {Promise<{isMuted: boolean, muteExpiration: number}>}
      */
     async unmute() {
+        console.log("\n🔊 unmute() called. Unmuting the chat.");
         const result = await this.client.unmuteChat(this.id._serialized);
         this.isMuted = result.isMuted;
         this.muteExpiration = result.muteExpiration;
+        console.log("✅ unmute() completed. isMuted:", this.isMuted, ", muteExpiration:", this.muteExpiration);
         return result;
     }
 
@@ -179,7 +221,10 @@ class Chat extends Base {
      * Mark this chat as unread
      */
     async markUnread(){
-        return this.client.markChatUnread(this.id._serialized);
+        console.log("\n✉️  markUnread() called. Marking the chat as unread.");
+        const result = await this.client.markChatUnread(this.id._serialized);
+        console.log("✅ markUnread() completed. Result:", result);
+        return result;
     }
 
     /**
@@ -190,6 +235,9 @@ class Chat extends Base {
      * @returns {Promise<Array<Message>>}
      */
     async fetchMessages(searchOptions) {
+        console.log("\n📥 fetchMessages() called. Fetching messages with options:", searchOptions);
+        console.log("    - This is a complex ASYNCHRONOUS operation. The browser will handle fetching and filtering.");
+        
         let messages = await this.client.pupPage.evaluate(async (chatId, searchOptions) => {
             const msgFilter = (m) => {
                 if (m.isNotification) {
@@ -220,7 +268,8 @@ class Chat extends Base {
             return msgs.map(m => window.WWebJS.getMessageModel(m));
 
         }, this.id._serialized, searchOptions);
-
+        
+        console.log("✅ fetchMessages() completed. Returning", messages.length, "Message objects.");
         return messages.map(m => new Message(this.client, m));
     }
 
@@ -228,30 +277,39 @@ class Chat extends Base {
      * Simulate typing in chat. This will last for 25 seconds.
      */
     async sendStateTyping() {
-        return this.client.pupPage.evaluate(chatId => {
+        console.log("\n✍️  sendStateTyping() called. The bot is now typing...");
+        const result = await this.client.pupPage.evaluate(chatId => {
             window.WWebJS.sendChatstate('typing', chatId);
             return true;
         }, this.id._serialized);
+        console.log("✅ sendStateTyping() completed. Result:", result);
+        return result;
     }
 
     /**
      * Simulate recording audio in chat. This will last for 25 seconds.
      */
     async sendStateRecording() {
-        return this.client.pupPage.evaluate(chatId => {
+        console.log("\n🎙️  sendStateRecording() called. The bot is now recording audio...");
+        const result = await this.client.pupPage.evaluate(chatId => {
             window.WWebJS.sendChatstate('recording', chatId);
             return true;
         }, this.id._serialized);
+        console.log("✅ sendStateRecording() completed. Result:", result);
+        return result;
     }
 
     /**
      * Stops typing or recording in chat immediately.
      */
     async clearState() {
-        return this.client.pupPage.evaluate(chatId => {
+        console.log("\n🛑 clearState() called. Stopping the bot's typing/recording state.");
+        const result = await this.client.pupPage.evaluate(chatId => {
             window.WWebJS.sendChatstate('stop', chatId);
             return true;
         }, this.id._serialized);
+        console.log("✅ clearState() completed. Result:", result);
+        return result;
     }
 
     /**
@@ -259,7 +317,10 @@ class Chat extends Base {
      * @returns {Promise<Contact>}
      */
     async getContact() {
-        return await this.client.getContactById(this.id._serialized);
+        console.log("\n👥 getContact() called. Fetching the Contact object for this chat.");
+        const result = await this.client.getContactById(this.id._serialized);
+        console.log("✅ getContact() completed. A Contact object was returned.");
+        return result;
     }
 
     /**
@@ -267,7 +328,10 @@ class Chat extends Base {
      * @returns {Promise<Array<Label>>}
      */
     async getLabels() {
-        return this.client.getChatLabels(this.id._serialized);
+        console.log("\n🏷️  getLabels() called. Fetching labels for this chat.");
+        const result = await this.client.getChatLabels(this.id._serialized);
+        console.log("✅ getLabels() completed. Found", result.length, "labels.");
+        return result;
     }
 
     /**
@@ -276,7 +340,10 @@ class Chat extends Base {
      * @returns {Promise<void>}
      */
     async changeLabels(labelIds) {
-        return this.client.addOrRemoveLabels(labelIds, [this.id._serialized]);
+        console.log("\n🏷️  changeLabels() called. Applying labels:", labelIds);
+        const result = await this.client.addOrRemoveLabels(labelIds, [this.id._serialized]);
+        console.log("✅ changeLabels() completed.");
+        return result;
     }
 
     /**
@@ -284,7 +351,10 @@ class Chat extends Base {
      * @returns {Promise<[Message]|[]>}
      */
     async getPinnedMessages() {
-        return this.client.getPinnedMessages(this.id._serialized);
+        console.log("\n📌 getPinnedMessages() called. Fetching pinned messages.");
+        const result = await this.client.getPinnedMessages(this.id._serialized);
+        console.log("✅ getPinnedMessages() completed. Found", result.length, "pinned messages.");
+        return result;
     }
     
     /**
@@ -292,7 +362,10 @@ class Chat extends Base {
      * @return {Promise<boolean>} True if operation completed successfully, false otherwise.
      */
     async syncHistory() {
-        return this.client.syncHistory(this.id._serialized);
+        console.log("\n🔄 syncHistory() called. Syncing the chat history.");
+        const result = await this.client.syncHistory(this.id._serialized);
+        console.log("✅ syncHistory() completed. Result:", result);
+        return result;
     }
 }
 

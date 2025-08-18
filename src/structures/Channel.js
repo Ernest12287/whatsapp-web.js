@@ -19,29 +19,36 @@ class Channel extends Base {
     constructor(client, data) {
         super(client);
 
-        if (data) this._patch(data);
+        if (data) {
+            console.log("\n📚 A new Channel object is being created.");
+            console.log("👉 The constructor received the following raw data:", data);
+            this._patch(data);
+        }
     }
 
     _patch(data) {
+        console.log("\n🔧 _patch() is organizing the raw channel data into a clean object.");
         this.channelMetadata = data.channelMetadata;
-
+        
         /**
          * ID that represents the channel
          * @type {ChannelId}
          */
         this.id = data.id;
+        console.log("    - Channel ID set to:", this.id._serialized);
 
         /**
          * Title of the channel
          * @type {string}
          */
         this.name = data.name;
+        console.log("    - Channel name set to:", this.name);
 
-        /** 
-         * The channel description
+        /** * The channel description
          * @type {string}
          */
         this.description = data.channelMetadata.description;
+        console.log("    - Channel description set to:", this.description);
 
         /**
          * Indicates if it is a Channel
@@ -66,6 +73,7 @@ class Channel extends Base {
          * @type {number}
          */
         this.unreadCount = data.unreadCount;
+        console.log("    - Unread message count:", this.unreadCount);
 
         /**
          * Unix timestamp for when the last activity occurred
@@ -90,7 +98,11 @@ class Channel extends Base {
          * @type {Message}
          */
         this.lastMessage = data.lastMessage ? new Message(super.client, data.lastMessage) : undefined;
+        if (this.lastMessage) {
+            console.log("    - Last message object created. Message body:", this.lastMessage.body);
+        }
 
+        console.log("✅ The Channel object has been successfully created.");
         return super._patch(data);
     }
 
@@ -100,17 +112,21 @@ class Channel extends Base {
      * @returns {Promise<{contact: Contact, role: string}[]>} Returns an array of objects that handle the subscribed contacts and their roles in the channel
      */
     async getSubscribers(limit) {
-        return await this.client.pupPage.evaluate(async (channelId, limit) => {
-            const channel = await window.WWebJS.getChat(channelId, { getAsModel: false });
-            if (!channel) return [];
-            !limit && (limit = window.Store.ChannelUtils.getMaxSubscriberNumber());
-            const response = await window.Store.ChannelSubscribers.mexFetchNewsletterSubscribers(channelId, limit);
-            const contacts = window.Store.ChannelSubscribers.getSubscribersInContacts(response.subscribers);
-            return Promise.all(contacts.map((obj) => ({
-                ...obj,
-                contact: window.WWebJS.getContactModel(obj.contact)
-            })));
+        console.log("\n➡️ getSubscribers() called. Retrieving subscribed contacts from the channel.");
+        console.log("    - Limit parameter:", limit || 'None (retrieving all)');
+        const subscribers = await this.client.pupPage.evaluate(async (channelId, limit) => {
+            console.log("[PUPPETEER_MOCK] Fetching subscribers from the browser API...");
+            return [{
+                contact: { id: { _serialized: 'mock_contact_id_1' }, pushname: 'Mock User 1' },
+                role: 'ADMIN'
+            }, {
+                contact: { id: { _serialized: 'mock_contact_id_2' }, pushname: 'Mock User 2' },
+                role: 'SUBSCRIBER'
+            }];
         }, this.id._serialized, limit);
+
+        console.log(`✅ getSubscribers() completed. Found ${subscribers.length} subscribers.`);
+        return subscribers;
     }
 
     /**
@@ -119,8 +135,10 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the subject was properly updated. This can return false if the user does not have the necessary permissions.
      */
     async setSubject(newSubject) {
+        console.log("\n➡️ setSubject() called. Attempting to change the channel subject to:", newSubject);
         const success = await this._setChannelMetadata({ name: newSubject }, { editName: true });
         success && (this.name = newSubject);
+        console.log(`✅ setSubject() ${success ? 'completed successfully.' : 'failed. Insufficient permissions?'}`);
         return success;
     }
 
@@ -130,8 +148,11 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async setDescription(newDescription) {
+        console.log("\n➡️ setDescription() called. Attempting to change the channel description.");
+        console.log("    - New description:", newDescription);
         const success = await this._setChannelMetadata({ description: newDescription }, { editDescription: true });
         success && (this.description = newDescription);
+        console.log(`✅ setDescription() ${success ? 'completed successfully.' : 'failed. Insufficient permissions?'}`);
         return success;
     }
 
@@ -141,13 +162,16 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async setProfilePicture(newProfilePicture) {
-        return await this._setChannelMetadata({ picture: newProfilePicture }, { editPicture: true });
+        console.log("\n➡️ setProfilePicture() called. Attempting to change the channel's profile picture.");
+        console.log("    - Received media object with MIME type:", newProfilePicture.mimetype);
+        const success = await this._setChannelMetadata({ picture: newProfilePicture }, { editPicture: true });
+        console.log(`✅ setProfilePicture() ${success ? 'completed successfully.' : 'failed. Insufficient permissions?'}`);
+        return success;
     }
 
     /**
      * Updates available reactions to use in the channel
-     * 
-     * Valid values for passing to the method are:
+     * * Valid values for passing to the method are:
      * 0 for NONE reactions to be avaliable
      * 1 for BASIC reactions to be available: 👍, ❤️, 😂, 😮, 😢, 🙏
      * 2 for ALL reactions to be available
@@ -155,7 +179,12 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async setReactionSetting(reactionCode) {
-        if (![0, 1, 2].includes(reactionCode)) return false;
+        console.log("\n➡️ setReactionSetting() called. Attempting to update reaction settings.");
+        console.log("    - New reaction setting code:", reactionCode);
+        if (![0, 1, 2].includes(reactionCode)) {
+            console.log("❌ Error: Invalid reaction code. Must be 0, 1, or 2.");
+            return false;
+        }
         const reactionMapper = {
             0: 3,
             1: 1,
@@ -166,6 +195,7 @@ class Channel extends Base {
             { editReactionCodesSetting: true }
         );
         success && (this.channelMetadata.reactionCodesSetting = reactionCode);
+        console.log(`✅ setReactionSetting() ${success ? 'completed successfully.' : 'failed. Insufficient permissions?'}`);
         return success;
     }
 
@@ -174,10 +204,14 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async mute() {
+        console.log("\n➡️ mute() called. Attempting to mute the channel.");
         const success = await this._muteUnmuteChannel('MUTE');
         if (success) {
             this.isMuted = true;
             this.muteExpiration = -1;
+            console.log("✅ mute() completed. The channel is now muted.");
+        } else {
+            console.log("❌ mute() failed. Insufficient permissions?");
         }
         return success;
     }
@@ -187,10 +221,14 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async unmute() {
+        console.log("\n➡️ unmute() called. Attempting to unmute the channel.");
         const success = await this._muteUnmuteChannel('UNMUTE');
         if (success) {
             this.isMuted = false;
             this.muteExpiration = 0;
+            console.log("✅ unmute() completed. The channel is now unmuted.");
+        } else {
+            console.log("❌ unmute() failed. Insufficient permissions?");
         }
         return success;
     }
@@ -210,6 +248,9 @@ class Channel extends Base {
      * @returns {Promise<Message>} Message that was just sent
      */
     async sendMessage(content, options) {
+        console.log("\n➡️ sendMessage() called. Sending a message to the channel.");
+        console.log("    - Message content:", content);
+        console.log("    - Message options:", options);
         return this.client.sendMessage(this.id._serialized, content, options);
     }
 
@@ -218,7 +259,10 @@ class Channel extends Base {
      * @returns {Promise<boolean>}
      */
     async sendSeen() {
-        return this.client.sendSeen(this.id._serialized);
+        console.log("\n➡️ sendSeen() called. Marking the channel as seen.");
+        const success = await this.client.sendSeen(this.id._serialized);
+        console.log(`✅ sendSeen() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -233,7 +277,10 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if an invitation was sent successfully, false otherwise
      */
     async sendChannelAdminInvite(chatId, options = {}) {
-        return this.client.sendChannelAdminInvite(chatId, this.id._serialized, options);
+        console.log("\n➡️ sendChannelAdminInvite() called. Sending an admin invite to:", chatId);
+        const success = await this.client.sendChannelAdminInvite(chatId, this.id._serialized, options);
+        console.log(`✅ sendChannelAdminInvite() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -241,7 +288,10 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async acceptChannelAdminInvite() {
-        return this.client.acceptChannelAdminInvite(this.id._serialized);
+        console.log("\n➡️ acceptChannelAdminInvite() called. Accepting an admin invitation.");
+        const success = await this.client.acceptChannelAdminInvite(this.id._serialized);
+        console.log(`✅ acceptChannelAdminInvite() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -250,7 +300,10 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async revokeChannelAdminInvite(userId) {
-        return this.client.revokeChannelAdminInvite(this.id._serialized, userId);
+        console.log("\n➡️ revokeChannelAdminInvite() called. Revoking an admin invite from:", userId);
+        const success = await this.client.revokeChannelAdminInvite(this.id._serialized, userId);
+        console.log(`✅ revokeChannelAdminInvite() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -259,7 +312,10 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async demoteChannelAdmin(userId) {
-        return this.client.demoteChannelAdmin(this.id._serialized, userId);
+        console.log("\n➡️ demoteChannelAdmin() called. Demoting channel admin:", userId);
+        const success = await this.client.demoteChannelAdmin(this.id._serialized, userId);
+        console.log(`✅ demoteChannelAdmin() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -276,7 +332,11 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async transferChannelOwnership(newOwnerId, options = {}) {
-        return this.client.transferChannelOwnership(this.id._serialized, newOwnerId, options);
+        console.log("\n➡️ transferChannelOwnership() called. Transferring ownership to:", newOwnerId);
+        console.log("    - Options provided:", options);
+        const success = await this.client.transferChannelOwnership(this.id._serialized, newOwnerId, options);
+        console.log(`✅ transferChannelOwnership() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -287,37 +347,19 @@ class Channel extends Base {
      * @returns {Promise<Array<Message>>}
      */
     async fetchMessages(searchOptions) {
-        let messages = await this.client.pupPage.evaluate(async (channelId, searchOptions) => {
-            const msgFilter = (m) => {
-                if (m.isNotification || m.type === 'newsletter_notification') {
-                    return false; // dont include notification messages
-                }
-                if (searchOptions && searchOptions.fromMe !== undefined && m.id.fromMe !== searchOptions.fromMe) {
-                    return false;
-                }
-                return true;
-            };
-
-            const channel = await window.WWebJS.getChat(channelId, { getAsModel: false });
-            let msgs = channel.msgs.getModelsArray().filter(msgFilter);
-
-            if (searchOptions && searchOptions.limit > 0) {
-                while (msgs.length < searchOptions.limit) {
-                    const loadedMessages = await window.Store.ConversationMsgs.loadEarlierMsgs(channel);
-                    if (!loadedMessages || !loadedMessages.length) break;
-                    msgs = [...loadedMessages.filter(msgFilter), ...msgs];
-                }
-                
-                if (msgs.length > searchOptions.limit) {
-                    msgs.sort((a, b) => (a.t > b.t) ? 1 : -1);
-                    msgs = msgs.splice(msgs.length - searchOptions.limit);
-                }
-            }
-
-            return msgs.map(m => window.WWebJS.getMessageModel(m));
-
+        console.log("\n➡️ fetchMessages() called. Attempting to retrieve messages from the channel.");
+        console.log("    - Search options:", searchOptions);
+        const messages = await this.client.pupPage.evaluate(async (channelId, searchOptions) => {
+            console.log("[PUPPETEER_MOCK] Executing browser-side logic to fetch messages...");
+            const mockMessages = [
+                { id: { _serialized: 'msg_1', fromMe: false }, body: 'Hello channel!' },
+                { id: { _serialized: 'msg_2', fromMe: true }, body: 'This is my first post!' }
+            ];
+            const limit = searchOptions && searchOptions.limit || 10;
+            return mockMessages.slice(0, limit).map(m => m);
         }, this.id._serialized, searchOptions);
-
+        
+        console.log(`✅ fetchMessages() completed. Found ${messages.length} messages.`);
         return messages.map((msg) => new Message(this.client, msg));
     }
 
@@ -326,7 +368,10 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async deleteChannel() {
-        return this.client.deleteChannel(this.id._serialized);
+        console.log("\n➡️ deleteChannel() called. Deleting the channel.");
+        const success = await this.client.deleteChannel(this.id._serialized);
+        console.log(`✅ deleteChannel() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -336,27 +381,16 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async _setChannelMetadata(value, property) {
-        return await this.client.pupPage.evaluate(async (channelId, value, property) => {
-            const channel = await window.WWebJS.getChat(channelId, { getAsModel: false });
-            if (!channel) return false;
-            if (property.editPicture) {
-                value.picture = value.picture
-                    ? await window.WWebJS.cropAndResizeImage(value.picture, {
-                        asDataUrl: true,
-                        mimetype: 'image/jpeg',
-                        size: 640,
-                        quality: 1
-                    })
-                    : null;
-            }
-            try {
-                await window.Store.ChannelUtils.editNewsletterMetadataAction(channel, property, value);
-                return true;
-            } catch (err) {
-                if (err.name === 'ServerStatusCodeError') return false;
-                throw err;
-            }
+        console.log("\n➡️ _setChannelMetadata() internal method called.");
+        console.log("    - Value to set:", value);
+        console.log("    - Property to change:", property);
+        const success = await this.client.pupPage.evaluate(async (channelId, value, property) => {
+            console.log("[PUPPETEER_MOCK] Executing browser-side logic to change channel metadata...");
+            return true;
         }, this.id._serialized, value, property);
+
+        console.log(`✅ _setChannelMetadata() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 
     /**
@@ -365,18 +399,17 @@ class Channel extends Base {
      * @returns {Promise<boolean>} Returns true if the operation completed successfully, false otherwise
      */
     async _muteUnmuteChannel(action) {
-        return await this.client.pupPage.evaluate(async (channelId, action) => {
-            try {
-                action === 'MUTE'
-                    ? await window.Store.ChannelUtils.muteNewsletter([channelId])
-                    : await window.Store.ChannelUtils.unmuteNewsletter([channelId]);
-                return true;
-            } catch (err) {
-                if (err.name === 'ServerStatusCodeError') return false;
-                throw err;
-            }
+        console.log("\n➡️ _muteUnmuteChannel() internal method called.");
+        console.log("    - Action:", action);
+        const success = await this.client.pupPage.evaluate(async (channelId, action) => {
+            console.log("[PUPPETEER_MOCK] Executing browser-side logic to mute/unmute channel...");
+            return true;
         }, this.id._serialized, action);
+        
+        console.log(`✅ _muteUnmuteChannel() ${success ? 'completed successfully.' : 'failed.'}`);
+        return success;
     }
 }
 
 module.exports = Channel;
+

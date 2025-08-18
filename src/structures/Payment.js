@@ -1,13 +1,21 @@
+'use strict';
+
 const Base = require('./Base');
 
 class Payment extends Base {
     constructor(client, data) {
         super(client);
 
-        if (data) this._patch(data);
+        if (data) {
+            console.log("\n📚 A new Payment object is being created.");
+            console.log("👉 The constructor received the following raw data:", data);
+            this._patch(data);
+        }
     }
 
     _patch(data) {
+        console.log("\n🔧 _patch() is organizing the raw payment data into a clean object.");
+
         /**
          * The payment Id
          * @type {object}
@@ -54,8 +62,7 @@ class Payment extends Base {
          * 9:CANCELLED
          * 10:WAITING_FOR_PAYER
          * 11:WAITING
-         * 
-         * @type {number}
+         * * @type {number}
          */
         this.paymentStatus = data.paymentStatus;
 
@@ -70,6 +77,15 @@ class Payment extends Base {
          * @type {string}
          */
         this.paymentNote = !data.paymentNoteMsg ? undefined : data.paymentNoteMsg.body ?  data.paymentNoteMsg.body : undefined ;
+        if (this.paymentNote) {
+            console.log("    - A payment note was included:", this.paymentNote);
+        }
+
+        console.log("✅ The Payment object has been created with the following properties:");
+        console.log("  - ID:", this.id);
+        console.log("  - Amount:", this.paymentAmount1000);
+        console.log("  - Currency:", this.paymentCurrency);
+        console.log("  - Status Code:", this.paymentStatus);
 
         return super._patch(data);
     }
@@ -77,3 +93,4 @@ class Payment extends Base {
 }
 
 module.exports = Payment;
+
